@@ -14,7 +14,7 @@
 #include <Wire.h>
 #include <URTouch.h>
 #include <UTFT_Buttons.h>
-#include <SD.h>
+//#include <SD.h>
 
 #define SD_CS 0x5D
 int dispx, dispy;
@@ -28,7 +28,8 @@ extern uint8_t BigFont[];
 //extern uint8_t
 //extern uint8_t
 //extern uint8_t
-bool wait = true, dispaly = true;
+bool wait = true;
+int dispaly5 = 0;
 int pressed_button;
 int sitebook = 0;
 uint8_t addr  = 0x5D;  //CTP IIC ADDRESS
@@ -41,17 +42,19 @@ extern bitmapdatatype icon;
 void ButtonsDisplay();
 void WelcomeDisplay();
 
-extern unsigned short YTdT8[0x640];
-extern unsigned short okay[0x640];
-extern unsigned short butcancel[0x640];
-extern unsigned short Back[0x640];
+//extern unsigned short YTdT8[0x640];
+//extern unsigned short okay[0x640];
+//extern unsigned short butcancel[0x640];
+//extern unsigned short Back[0x640];
 extern unsigned short English[3900];
-extern unsigned short Hindii[3990];
-extern unsigned short China[4370];
-extern unsigned short urdu[4550];
-extern unsigned short russia[3600];
-extern unsigned short Japan[4420];
+//extern unsigned short Hindii[3990];
+//extern unsigned short China[4370];
+//extern unsigned short urdu[4550];
+//extern unsigned short russia[3600];
+//extern unsigned short Japan[4420];
 extern unsigned short Germany[3840];
+
+extern unsigned short Welcome1[75200];
 
 //extern unsigned int
 
@@ -61,7 +64,7 @@ extern unsigned short Germany[3840];
 #define GT911_RESET 41   //CTP RESET
 #define GT911_INT   48   //CTP  INT
 int butskip;
-UTFT myGLCD(TFTM080_1_16, 38, 39, 40, 41, 1); //(byte model, int RS, int WR, int CS, int RST)
+UTFT myGLCD(SSD1963_800480, 38, 39, 40, 41, 1); //(byte model, int RS, int WR, int CS, int RST)
 URTouch  myTouch( 6, 5, 4, 3, 2);
 UTFT_Buttons  myButtons(&myGLCD, &myTouch);
 
@@ -123,81 +126,6 @@ uint8_t GT911_Send_Cfg(uint8_t * buf, uint16_t cfg_len)
     delay(10);
   }
   //return ret;
-}
-
-void writeGT911TouchRegister( uint16_t regAddr, uint8_t *val, uint16_t cnt)
-{ uint16_t i = 0;
-  Wire.beginTransmission(addr);
-  Wire.write( regAddr >> 8 ); // register 0
-  Wire.write( regAddr);  // register 0
-  for (i = 0; i < cnt; i++, val++) //data
-  {
-    Wire.write( *val );  // value
-  }
-  uint8_t retVal = Wire.endTransmission();
-}
-
-uint8_t readGT911TouchAddr( uint16_t regAddr, uint8_t * pBuf, uint8_t len )
-{
-  Wire.beginTransmission(addr);
-  Wire.write( regAddr >> 8 ); // register 0
-  Wire.write( regAddr);  // register 0
-  uint8_t retVal = Wire.endTransmission();
-
-  uint8_t returned = Wire.requestFrom(addr, len);    // request 1 bytes from slave device #2
-
-  uint8_t i;
-  for (i = 0; (i < len) && Wire.available(); i++)
-
-  {
-    pBuf[i] = Wire.read();
-  }
-
-  return i;
-}
-
-uint8_t readGT911TouchLocation( TouchLocation * pLoc, uint8_t num )
-{
-  uint8_t retVal;
-  uint8_t i;
-  uint8_t k;
-  uint8_t  ss[1];
-
-  do
-  {
-    if (!pLoc) break; // must have a buffer
-    if (!num)  break; // must be able to take at least one
-    ss[0] = 0;
-    readGT911TouchAddr( 0x814e, ss, 1);
-    uint8_t status = ss[0];
-
-    if ((status & 0x0f) == 0) break; // no points detected
-    uint8_t hitPoints = status & 0x0f;
-
-    Serial.print("number of hit points = ");
-    Serial.println( hitPoints );
-    hitPointsGlo = hitPoints;
-
-    uint8_t tbuf[32];  uint8_t tbuf1[8];
-    readGT911TouchAddr( 0x8150, tbuf, 40);
-    readGT911TouchAddr( 0x8150 + 32, tbuf1, 8);
-
-    for (k = 0, i = 0; (i <  4 * 8) && (k < num); k++, i += 8)
-    {
-      pLoc[k].x = tbuf[i + 1] << 8 | tbuf[i + 0];
-      pLoc[k].y = tbuf[i + 3] << 8 | tbuf[i + 2];
-    }
-    pLoc[k].x = tbuf1[1] << 8 | tbuf1[0];
-    pLoc[k].y = tbuf1[3] << 8 | tbuf1[2];
-
-    retVal = hitPoints;
-
-  } while (0);
-
-  ss[0] = 0;
-  writeGT911TouchRegister( 0x814e, ss, 1);
-  delay(2);
-  return retVal;
 }
 
 void setup()
@@ -274,70 +202,16 @@ void setup()
   //  }
   //  Serial.println("OK!");
 
-  WelcomeDisplay();
 
-  /*
-      //  int but15 = myButtons.addButton(260, 130, 16, 16, bell);
-      //  int but16 = myButtons.addButton(180, 130, 25, 25, bird);
-      //  myButtons.drawButtons();
-      //  myGLCD.setColor(0, 0, 0); /// letter color
-      //  myGLCD.print("Deutsch ", 310, 260, 90);
-      //  myGLCD.print("English ", 220, 260, 90);
-      //
-      //  myGLCD.drawBitmap(200, 200, 16, 16, bell,1);
+  myGLCD.fillRect(0, 0, 799, 879);
+  myGLCD.setColor(255, 255, 255);
+  myGLCD.setBackColor(255, 255, 255); /// white backgroung
+  myGLCD.setColor(255, 255, 255);
+  myGLCD.drawBitmap (50, 100, 400, 188, Welcome1); ///(X and Y posion then Size of Image)
 
-      // but1 = myButtons.addButton(10, 30, 70, 70, "1");
-      //  but2 = myButtons.addButton(105, 30, 70, 70, "2");
-      //  but3 = myButtons.addButton(195, 30, 70, 70, "3");
-      //
-      //  but4 = myButtons.addButton(10, 130, 70, 70, "4");
-      //  but5 = myButtons.addButton(105, 130, 70, 70, "5");
-      //  but6 = myButtons.addButton(195, 130, 70, 70, "6");
-      //
-      //  but7 = myButtons.addButton(10, 230, 70, 70, "7");
-      //  but8 = myButtons.addButton(105, 230, 70, 70, "8");
-      //  but9 = myButtons.addButton(195, 230, 70, 70, "9");
-      //
-      //  but10 = myButtons.addButton(10, 330, 70, 70, "*");
-      //  but11 = myButtons.addButton(105, 330, 70, 70, "0");
-      //  but12 = myButtons.addButton(195, 330, 70, 70, "#");
-      /* myButtons.setButtonColors(VGA_WHITE, VGA_GRAY, VGA_BLACK, VGA_RED, VGA_BLUE);
-        myButtons.setButtonColors(VGA_WHITE, VGA_RED, VGA_RED, VGA_RED, VGA_RED);
-        myGLCD.setFont(SmallFont);
-        myGLCD.setBackColor(255, 255, 255); /// white backgroung
-        myGLCD.setColor(0, 0, 0); /// letter color
-        myGLCD.print("Bitte geben Sie Ihre Buchungsnummer ein ", 10, 200);
-        but1 = myButtons.addButton(0, 258, 150, 120, "1");
-        but2 = myButtons.addButton(165, 258, 150, 120, "2");
-        but3 = myButtons.addButton(329, 258, 150, 120, "3");
+  // WelcomeDisplay();  test1
 
-        but4 = myButtons.addButton(0, 398, 150, 120, "4");
-        but5 = myButtons.addButton(165, 398, 150, 120, "5");
-        but6 = myButtons.addButton(329, 398, 150, 120, "6");
 
-        but7 = myButtons.addButton(0, 538, 150, 120, "7");
-        but8 = myButtons.addButton(165, 538, 150, 120, "8");
-        but9 = myButtons.addButton(329, 538, 150, 120, "9");
-
-        but10 = myButtons.addButton(0, 0, 230, 90, "<- Zuruck");
-        but11 = myButtons.addButton(249, 0, 230, 90, "X Abbrechen");
-
-        but12 = myButtons.addButton(0, 678, 150, 120, "Clear1");
-        but13 = myButtons.addButton(165, 678, 150, 120, " 0 ");
-        but14 = myButtons.addButton(329, 678, 150, 120, "Clear3");
-
-        //  but1 = myButtons.addButton(329, 478, 150, 120, "a", BUTTON_SYMBOL);
-        //  but2 = myButtons.addButton(329, 578, 150, 120, "I", BUTTON_SYMBOL | BUTTON_SYMBOL_REP_3X);
-        delay(2000);
-        myButtons.setButtonColors(VGA_YELLOW, VGA_GRAY, VGA_BLACK, VGA_RED, VGA_BLUE);
-
-        myButtons.drawButtons();
-        delay(2000);
-        myButtons.setButtonColors(VGA_WHITE, VGA_GRAY, VGA_GRAY, VGA_GRAY, VGA_GRAY);
-
-        myButtons.drawButtons();*/
-  /*
-   * */
 }
 
 uint32_t dist(const TouchLocation & loc)
@@ -453,17 +327,17 @@ void loop()
                 if (buttonsonce == 1) ButtonsDisplay();
                 sitebook = 0;
                 Serial.println("Button Display");
-                dispaly = false;
+                dispaly5++;
               }
               if (touchLocations[i].x > 756 && touchLocations[i].x < 786 && touchLocations[i].y > 246 && touchLocations[i].y < 470)
               {
-                dispaly = true;
+                dispaly5 = 0;
                 WelcomeDisplay();
                 buttonsonce = 0;
                 Serial.println("Welcome Display");
               }
 
-              if (dispaly == false)
+              if (true)
               {
                 if (touchLocations[i].x > 340 && touchLocations[i].x < 429 && touchLocations[i].y > 8 && touchLocations[i].y < 113)
                 {
@@ -489,7 +363,9 @@ void loop()
                 }
                 if (touchLocations[i].x > 238 && touchLocations[i].x < 309 && touchLocations[i].y > 162 && touchLocations[i].y < 294)
                 {
-                  if (dispaly == false)
+                  dispaly5++;
+                  Serial.println(dispaly5);
+                  if (dispaly5 > 2)
                   {
                     myGLCD.print("5", 60 + sitebook, 184, 0);
                     sitebook = sitebook + 30;
@@ -529,18 +405,18 @@ void loop()
 
               if (touchLocations[i].x > 4 && touchLocations[i].x < 92 && touchLocations[i].y > 8 && touchLocations[i].y < 113)
               {
-                myButtons.setTextFont(SmallFont);
+                //myButtons.setTextFont(SmallFont);
                 // myGLCD.print("clear", 30, 160, 0);
-                sitebook = 0;
+                //sitebook = 0;
 
-                //                for (int rep = 60; rep < 600;)
-                //                {
-                //                  myGLCD.setBackColor(255, 255, 255); /// white backgroung
-                //                  myGLCD.setColor(255, 255, 255); /// letter color
-                //                  myGLCD.print("1", rep, 184, 0);
-                //                  rep = rep + 30;
-                //                }
-                //                delay(1000);
+                //                int rep = sitebook - 30;
+                //
+                //                myGLCD.setBackColor(255, 255, 255); /// white backgroung
+                //                myGLCD.setColor(255, 255, 255); /// letter color
+                //                myGLCD.print("1", rep, 184, 0);
+                //                sitebook = sitebook - 30;
+
+                // delay(1000);
                 //  myGLCD.print("clear", 30, 160, 0);
               }
               previousX = touchLocations[i].x;
@@ -561,70 +437,77 @@ void loop()
 }
 void WelcomeDisplay()
 {
-  myButtons.setTextFont(BigFont);
-  //butskip = myButtons.addButton( 85,  219 , 70,  20, "Skip");
-  //Serial.println("Skip created");
-  // myButtons.drawButton(butskip);
 
-  myGLCD.fillRect(0, 0, 799, 879);
-  myGLCD.setColor(255, 255, 255);
-
-  myGLCD.setFont(BigFont);
-  //  myGLCD.setFont(2);
-  myGLCD.fillRect(0, 0, 799, 879);
-  myGLCD.setColor(255, 0, 0);
-  //  myGLCD.print("* Enter the Booking Number!", 300, 150, 0);
-  // Draw the upper row of buttons
-
-  myGLCD.setFont(GroteskBold24x48);
-  myGLCD.setBackColor(255, 255, 255); /// white backgroung
-
-  myGLCD.setColor(0, 255, 0); /// letter color
-  myGLCD.print("WELCOME", 150, 40);
-
-  myGLCD.setColor(0, 0, 0); /// black
-  myGLCD.drawBitmap (230, 92, 95, 42, Hindii);
-
-  myGLCD.setColor(255, 0, 0); /// red color
-  // myGLCD.print(" CHINA ", 80, 110); 95x46
-  myGLCD.drawBitmap (80, 102, 95, 46, China);
-
-  myGLCD.setColor(255, 255, 0); /// yellow color
-  myGLCD.print(" BIENVENIDA ", 120, 155);
-
-  myGLCD.setColor(0, 255, 255); /// blue color
-  myGLCD.print(" WILLKOMMEN ", 70, 210);
-
-  myGLCD.setColor(150, 0, 255); /// letter color
-  myGLCD.print(" BIENVENUE ", 160, 270);
-
-  myGLCD.setColor(0, 150, 255); /// letter color
-  myGLCD.drawBitmap (20, 325, 130, 34, Japan);
-
-  myGLCD.setColor(0, 255, 0); /// letter color
-  myGLCD.drawBitmap (165, 325, 180, 20, russia);
-
-  myGLCD.setColor(0, 255, 255);
-  myGLCD.drawBitmap (70, 390, 120, 32, urdu);
-
-  myGLCD.setColor(255, 0, 0); /// red color
-  myGLCD.print("BEM-VINDO ", 190, 390);
-
-  // myGLCD.fillRoundRect (90 , 560, 200, 510); // Draws filled rounded rectangle
-  // myGLCD.drawRoundRect (90 , 560, 200, 510); // Draws rounded rectangle without a fill, so the overall appearance of the button looks like it has a frame
-  myGLCD.setFont(BigFont); // Sets the font to big
-
-  //int but15 = myButtons.addButton(90, 630, 128, 90, English);
   myGLCD.drawBitmap (130, 510, 80, 48, Germany);  /// 100x60
-  myGLCD.drawBitmap (130, 570, 75, 52, English); /// 90x63
-
-  myGLCD.setColor(0, 0, 0); /// red color
   myGLCD.print("Deutsch", 220, 530); // Prints the string
 
-  // myGLCD.fillRoundRect (90 , 630, 200, 570); // Draws filled rounded rectangle
-  // myGLCD.drawRoundRect (90 , 630, 200, 570); // Draws rounded rectangle without a fill, so the overall appearance of the button looks like it has a frame
-
+  myGLCD.drawBitmap (130, 570, 75, 52, English); /// 90x63
   myGLCD.print("English", 220, 595); // Prints the string
+
+  //  myButtons.setTextFont(BigFont);
+  //  //butskip = myButtons.addButton( 85,  219 , 70,  20, "Skip");
+  //  //Serial.println("Skip created");
+  //  // myButtons.drawButton(butskip);
+  //
+  //  myGLCD.fillRect(0, 0, 799, 879);
+  //  myGLCD.setColor(255, 255, 255);
+  //
+  //  myGLCD.setFont(BigFont);
+  //  //  myGLCD.setFont(2);
+  //  myGLCD.fillRect(0, 0, 799, 879);
+  //  myGLCD.setColor(255, 0, 0);
+  //  //  myGLCD.print("* Enter the Booking Number!", 300, 150, 0);
+  //  // Draw the upper row of buttons
+  //
+  //  myGLCD.setFont(GroteskBold24x48);
+  //  myGLCD.setBackColor(255, 255, 255); /// white backgroung
+  //
+  //  myGLCD.setColor(0, 255, 0); /// letter color
+  //  myGLCD.print("WELCOME", 150, 40);
+  //
+  //  myGLCD.setColor(0, 0, 0); /// black
+  //  myGLCD.drawBitmap (230, 92, 95, 42, Hindii);
+  //
+  //  myGLCD.setColor(255, 0, 0); /// red color
+  //  // myGLCD.print(" CHINA ", 80, 110); 95x46
+  //  myGLCD.drawBitmap (80, 102, 95, 46, China);
+  //
+  //  myGLCD.setColor(255, 255, 0); /// yellow color
+  //  myGLCD.print(" BIENVENIDA ", 120, 155);
+  //
+  //  myGLCD.setColor(0, 255, 255); /// blue color
+  //  myGLCD.print(" WILLKOMMEN ", 70, 210);
+  //
+  //  myGLCD.setColor(150, 0, 255); /// letter color
+  //  myGLCD.print(" BIENVENUE ", 160, 270);
+  //
+  //  myGLCD.setColor(0, 150, 255); /// letter color
+  //  myGLCD.drawBitmap (20, 325, 130, 34, Japan);
+  //
+  //  myGLCD.setColor(0, 255, 0); /// letter color
+  //  myGLCD.drawBitmap (165, 325, 180, 20, russia);
+  //
+  //  myGLCD.setColor(0, 255, 255);
+  //  myGLCD.drawBitmap (70, 390, 120, 32, urdu);
+  //
+  //  myGLCD.setColor(255, 0, 0); /// red color
+  //  myGLCD.print("BEM-VINDO ", 190, 390);
+  //
+  //  // myGLCD.fillRoundRect (90 , 560, 200, 510); // Draws filled rounded rectangle
+  //  // myGLCD.drawRoundRect (90 , 560, 200, 510); // Draws rounded rectangle without a fill, so the overall appearance of the button looks like it has a frame
+  //  myGLCD.setFont(BigFont); // Sets the font to big
+  //
+  //  //int but15 = myButtons.addButton(90, 630, 128, 90, English);
+  //  myGLCD.drawBitmap (130, 510, 80, 48, Germany);  /// 100x60
+  //  myGLCD.drawBitmap (130, 570, 75, 52, English); /// 90x63
+  //
+  //  myGLCD.setColor(0, 0, 0); /// red color
+  //
+  //
+  //  // myGLCD.fillRoundRect (90 , 630, 200, 570); // Draws filled rounded rectangle
+  //  // myGLCD.drawRoundRect (90 , 630, 200, 570); // Draws rounded rectangle without a fill, so the overall appearance of the button looks like it has a frame
+  //
+
 }
 
 void ButtonsDisplay()
@@ -762,180 +645,167 @@ void ButtonsDisplay()
   myGLCD.print("Abbrechen", 300, 17); // Prints the string
 
 
-  //myGLCD.fillScr(255, 255, 255);
-  //myGLCD.setColor(0, 0, 0);
-  // myGLCD.print(" *** A 10 by 7 grid of a 32x32 icon *** ", CENTER, 228);
-  for (int x = 0; x < 1; x++)
-    for (int y = 0; y < 1; y++)
-      myGLCD.drawBitmap (25, 705, 80, 80, YTdT8);
-  //  delay(5000);
-  for (int x = 0; x < 1; x++)
-    for (int y = 0; y < 1; y++)
-      myGLCD.drawBitmap (350, 705, 80, 80, okay);
-
-  myGLCD.drawBitmap (250, 5, 40, 40, butcancel);
-  myGLCD.drawBitmap (13, 5, 40, 40, Back);
-
-  myGLCD.setFont(BigFont);
-  myGLCD.setBackColor(255, 255, 255); /// white backgroung
-  myGLCD.setColor(0, 0, 0); /// letter color
-  myGLCD.print("Bitte geben Sie Ihre", 30, 100);
-  myGLCD.print("Buchungsnummer ein", 30, 130);
+  //  //myGLCD.fillScr(255, 255, 255);
+  //  //myGLCD.setColor(0, 0, 0);
+  //  // myGLCD.print(" *** A 10 by 7 grid of a 32x32 icon *** ", CENTER, 228);
+  //  for (int x = 0; x < 1; x++)
+  //    for (int y = 0; y < 1; y++)
+  //      myGLCD.drawBitmap (25, 705, 80, 80, YTdT8);
+  //  //  delay(5000);
+  //  for (int x = 0; x < 1; x++)
+  //    for (int y = 0; y < 1; y++)
+  //      myGLCD.drawBitmap (350, 705, 80, 80, okay);
+  //
+  //  myGLCD.drawBitmap (250, 5, 40, 40, butcancel);
+  //  myGLCD.drawBitmap (13, 5, 40, 40, Back);
+  //
+  //  myGLCD.setFont(BigFont);
+  //  myGLCD.setBackColor(255, 255, 255); /// white backgroung
+  //  myGLCD.setColor(0, 0, 0); /// letter color
+  //  myGLCD.print("Bitte geben Sie Ihre", 30, 100);
+  //  myGLCD.print("Buchungsnummer ein", 30, 130);
 
 }
 
-uint16_t read16(File f)
+void writeGT911TouchRegister( uint16_t regAddr, uint8_t *val, uint16_t cnt)
+{ uint16_t i = 0;
+  Wire.beginTransmission(addr);
+  Wire.write( regAddr >> 8 ); // register 0
+  Wire.write( regAddr);  // register 0
+  for (i = 0; i < cnt; i++, val++) //data
+  {
+    Wire.write( *val );  // value
+  }
+  uint8_t retVal = Wire.endTransmission();
+}
+
+uint8_t readGT911TouchAddr( uint16_t regAddr, uint8_t * pBuf, uint8_t len )
 {
-  uint16_t result;
-  ((uint8_t *)&result)[0] = f.read(); // LSB
-  ((uint8_t *)&result)[1] = f.read(); // MSB
-  return result;
-}
+  Wire.beginTransmission(addr);
+  Wire.write( regAddr >> 8 ); // register 0
+  Wire.write( regAddr);  // register 0
+  uint8_t retVal = Wire.endTransmission();
 
-uint32_t read32(File f) {
-  uint32_t result;
-  ((uint8_t *)&result)[0] = f.read(); // LSB
-  ((uint8_t *)&result)[1] = f.read();
-  ((uint8_t *)&result)[2] = f.read();
-  ((uint8_t *)&result)[3] = f.read(); // MSB
-  return result;
-}
+  uint8_t returned = Wire.requestFrom(addr, len);    // request 1 bytes from slave device #2
 
-#define BUFFPIXEL 20
+  uint8_t i;
+  for (i = 0; (i < len) && Wire.available(); i++)
 
-void bmpDraw(char *filename, int x, int y) {
-  File     bmpFile;
-  int      bmpWidth, bmpHeight;   // W+H in pixels
-  uint8_t  bmpDepth;              // Bit depth (currently must be 24)
-  uint32_t bmpImageoffset;        // Start of image data in file
-  uint32_t rowSize;               // Not always = bmpWidth; may have padding
-  uint8_t  sdbuffer[3 * BUFFPIXEL]; // pixel in buffer (R+G+B per pixel)
-  uint16_t lcdbuffer[BUFFPIXEL];  // pixel out buffer (16-bit per pixel)
-  uint8_t  buffidx = sizeof(sdbuffer); // Current position in sdbuffer
-  boolean  goodBmp = false;       // Set to true on valid header parse
-  boolean  flip    = true;        // BMP is stored bottom-to-top
-  int      w, h, row, col;
-  uint8_t  r, g, b;
-  uint32_t pos = 0, startTime = millis();
-  uint8_t  lcdidx = 0;
-  boolean  first = true;
-
-  if ((x >= dispx) || (y >= dispy)) return;
-
-  Serial.println();
-  Serial.print(F("Loading image '"));
-  Serial.print(filename);
-  Serial.println('\'');
-
-  // Open requested file on SD card
-  if ((bmpFile = SD.open(filename)) == NULL) {
-    Serial.println(F("File not found"));
-    return;
+  {
+    pBuf[i] = Wire.read();
   }
 
-  // Parse BMP header
-  if (read16(bmpFile) == 0x4D42) { // BMP signature
-    Serial.println(F("File size: "));
-    Serial.println(read32(bmpFile));
-    (void)read32(bmpFile); // Read & ignore creator bytes
-    bmpImageoffset = read32(bmpFile); // Start of image data
-    Serial.print(F("Image Offset: "));
-    Serial.println(bmpImageoffset, DEC);
+  return i;
+}
 
-    // Read DIB header
-    Serial.print(F("Header size: "));
-    Serial.println(read32(bmpFile));
-    bmpWidth  = read32(bmpFile);
-    bmpHeight = read32(bmpFile);
+uint8_t readGT911TouchLocation( TouchLocation * pLoc, uint8_t num )
+{
+  uint8_t retVal;
+  uint8_t i;
+  uint8_t k;
+  uint8_t  ss[1];
 
-    if (read16(bmpFile) == 1) { // # planes -- must be '1'
-      bmpDepth = read16(bmpFile); // bits per pixel
-      Serial.print(F("Bit Depth: "));
-      Serial.println(bmpDepth);
-      if ((bmpDepth == 24) && (read32(bmpFile) == 0)) { // 0 = uncompressed
-        goodBmp = true; // Supported BMP format -- proceed!
-        Serial.print(F("Image size: "));
-        Serial.print(bmpWidth);
-        Serial.print('x');
-        Serial.println(bmpHeight);
+  do
+  {
+    if (!pLoc) break; // must have a buffer
+    if (!num)  break; // must be able to take at least one
+    ss[0] = 0;
+    readGT911TouchAddr( 0x814e, ss, 1);
+    uint8_t status = ss[0];
 
-        // BMP rows are padded (if needed) to 4-byte boundary
-        rowSize = (bmpWidth * 3 + 3) & ~3;
+    if ((status & 0x0f) == 0) break; // no points detected
+    uint8_t hitPoints = status & 0x0f;
 
-        // If bmpHeight is negative, image is in top-down order.
-        // This is not canon but has been observed in the wild.
-        if (bmpHeight < 0) {
-          bmpHeight = -bmpHeight;
-          flip      = false;
-        }
+    Serial.print("number of hit points = ");
+    Serial.println( hitPoints );
+    hitPointsGlo = hitPoints;
 
-        // Crop area to be loaded
-        w = bmpWidth;
-        h = bmpHeight;
-        if ((x + w - 1) >= dispx)  w = dispx  - x;
-        if ((y + h - 1) >= dispy) h = dispy - y;
+    uint8_t tbuf[32];  uint8_t tbuf1[8];
+    readGT911TouchAddr( 0x8150, tbuf, 40);
+    readGT911TouchAddr( 0x8150 + 32, tbuf1, 8);
 
-        // Set TFT address window to clipped image bounds
-
-        for (row = 0; row < h; row++) { // For each scanline...
-          // Seek to start of scan line.  It might seem labor-
-          // intensive to be doing this on every line, but this
-          // method covers a lot of gritty details like cropping
-          // and scanline padding.  Also, the seek only takes
-          // place if the file position actually needs to change
-          // (avoids a lot of cluster math in SD library).
-          if (flip) // Bitmap is stored bottom-to-top order (normal BMP)
-            pos = bmpImageoffset + (bmpHeight - 1 - row) * rowSize;
-          else     // Bitmap is stored top-to-bottom
-            pos = bmpImageoffset + row * rowSize;
-          if (bmpFile.position() != pos) { // Need seek?
-            bmpFile.seek(pos);
-            buffidx = sizeof(sdbuffer); // Force buffer reload
-          }
-
-          for (col = 0; col < w; col++) { // For each column...
-            // Time to read more pixel data?
-            if (buffidx >= sizeof(sdbuffer)) { // Indeed
-              // Push LCD buffer to the display first
-              if (lcdidx > 0) {
-                myGLCD.setColor(lcdbuffer[lcdidx]);
-                myGLCD.drawPixel(col, row);
-                lcdidx = 0;
-                first  = false;
-              }
-
-              bmpFile.read(sdbuffer, sizeof(sdbuffer));
-              buffidx = 0; // Set index to beginning
-            }
-
-            // Convert pixel from BMP to TFT format
-            b = sdbuffer[buffidx++];
-            g = sdbuffer[buffidx++];
-            r = sdbuffer[buffidx++];
-            myGLCD.setColor(r, g, b);
-            myGLCD.drawPixel(col, row);
-          } // end pixel
-
-        } // end scanline
-
-        // Write any remaining data to LCD
-        if (lcdidx > 0) {
-          myGLCD.setColor(lcdbuffer[lcdidx]);
-          myGLCD.drawPixel(col, row);
-        }
-
-        Serial.print(F("Loaded in "));
-        Serial.print(millis() - startTime);
-        Serial.println(" ms");
-
-      } // end goodBmp
+    for (k = 0, i = 0; (i <  4 * 8) && (k < num); k++, i += 8)
+    {
+      pLoc[k].x = tbuf[i + 1] << 8 | tbuf[i + 0];
+      pLoc[k].y = tbuf[i + 3] << 8 | tbuf[i + 2];
     }
-  }
+    pLoc[k].x = tbuf1[1] << 8 | tbuf1[0];
+    pLoc[k].y = tbuf1[3] << 8 | tbuf1[2];
 
-  bmpFile.close();
-  if (!goodBmp) Serial.println(F("BMP format not recognized."));
+    retVal = hitPoints;
+
+  } while (0);
+
+  ss[0] = 0;
+  writeGT911TouchRegister( 0x814e, ss, 1);
+  delay(2);
+  return retVal;
 }
+#define BUFFPIXEL 20
 
 // These read 16 - and 32 - bit types from the SD card file.
 // BMP data is stored little-endian, Arduino is little-endian too.
 // May need to reverse subscript order if porting elsewhere.
+
+/*
+    //  int but15 = myButtons.addButton(260, 130, 16, 16, bell);
+    //  int but16 = myButtons.addButton(180, 130, 25, 25, bird);
+    //  myButtons.drawButtons();
+    //  myGLCD.setColor(0, 0, 0); /// letter color
+    //  myGLCD.print("Deutsch ", 310, 260, 90);
+    //  myGLCD.print("English ", 220, 260, 90);
+    //
+    //  myGLCD.drawBitmap(200, 200, 16, 16, bell,1);
+
+    // but1 = myButtons.addButton(10, 30, 70, 70, "1");
+    //  but2 = myButtons.addButton(105, 30, 70, 70, "2");
+    //  but3 = myButtons.addButton(195, 30, 70, 70, "3");
+    //
+    //  but4 = myButtons.addButton(10, 130, 70, 70, "4");
+    //  but5 = myButtons.addButton(105, 130, 70, 70, "5");
+    //  but6 = myButtons.addButton(195, 130, 70, 70, "6");
+    //
+    //  but7 = myButtons.addButton(10, 230, 70, 70, "7");
+    //  but8 = myButtons.addButton(105, 230, 70, 70, "8");
+    //  but9 = myButtons.addButton(195, 230, 70, 70, "9");
+    //
+    //  but10 = myButtons.addButton(10, 330, 70, 70, "*");
+    //  but11 = myButtons.addButton(105, 330, 70, 70, "0");
+    //  but12 = myButtons.addButton(195, 330, 70, 70, "#");
+    /* myButtons.setButtonColors(VGA_WHITE, VGA_GRAY, VGA_BLACK, VGA_RED, VGA_BLUE);
+      myButtons.setButtonColors(VGA_WHITE, VGA_RED, VGA_RED, VGA_RED, VGA_RED);
+      myGLCD.setFont(SmallFont);
+      myGLCD.setBackColor(255, 255, 255); /// white backgroung
+      myGLCD.setColor(0, 0, 0); /// letter color
+      myGLCD.print("Bitte geben Sie Ihre Buchungsnummer ein ", 10, 200);
+      but1 = myButtons.addButton(0, 258, 150, 120, "1");
+      but2 = myButtons.addButton(165, 258, 150, 120, "2");
+      but3 = myButtons.addButton(329, 258, 150, 120, "3");
+
+      but4 = myButtons.addButton(0, 398, 150, 120, "4");
+      but5 = myButtons.addButton(165, 398, 150, 120, "5");
+      but6 = myButtons.addButton(329, 398, 150, 120, "6");
+
+      but7 = myButtons.addButton(0, 538, 150, 120, "7");
+      but8 = myButtons.addButton(165, 538, 150, 120, "8");
+      but9 = myButtons.addButton(329, 538, 150, 120, "9");
+
+      but10 = myButtons.addButton(0, 0, 230, 90, "<- Zuruck");
+      but11 = myButtons.addButton(249, 0, 230, 90, "X Abbrechen");
+
+      but12 = myButtons.addButton(0, 678, 150, 120, "Clear1");
+      but13 = myButtons.addButton(165, 678, 150, 120, " 0 ");
+      but14 = myButtons.addButton(329, 678, 150, 120, "Clear3");
+
+      //  but1 = myButtons.addButton(329, 478, 150, 120, "a", BUTTON_SYMBOL);
+      //  but2 = myButtons.addButton(329, 578, 150, 120, "I", BUTTON_SYMBOL | BUTTON_SYMBOL_REP_3X);
+      delay(2000);
+      myButtons.setButtonColors(VGA_YELLOW, VGA_GRAY, VGA_BLACK, VGA_RED, VGA_BLUE);
+
+      myButtons.drawButtons();
+      delay(2000);
+      myButtons.setButtonColors(VGA_WHITE, VGA_GRAY, VGA_GRAY, VGA_GRAY, VGA_GRAY);
+
+      myButtons.drawButtons();*/
+/*
+ * */
